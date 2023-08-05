@@ -1,0 +1,85 @@
+#+title: Steps before using the Emacs configuration
+
+You can use these code blocks below to make it easier to start with 
+
+** Install fonts
+
+Run this block first (using ~C-c C-c~) to globally set your font-dir (defaults to .emacs.d/fonts).
+You can customize this if you want.
+#+BEGIN_SRC emacs-lisp :results none
+  (org-entry-put (point-min) "font-dir" (expand-file-name "fonts" user-emacs-directory))
+#+END_SRC
+
+*** Install all-the-icons and nerd-icons fonts
+Download the fonts for nerd-icons into your .emacs.d-folder. Let us handle creating the fonts-folder for you :smile:
+#+BEGIN_SRC emacs-lisp :results output
+  (defun install-icon-fonts (url-format font-package font-names)
+    (let ((font-dest (expand-file-name font-package (org-entry-get (point-min) "font-dir"))))
+      (unless (file-directory-p font-dest) (mkdir font-dest t))
+
+      (mapc (lambda (font)
+	      (url-copy-file (format url-format font) (expand-file-name font font-dest) t))
+	    font-names)
+      (browse-url font-dest)
+      (princ (format "%s-fonts downloaded to %s\n" font-package font-dest))))
+
+  (install-icon-fonts
+   "https://raw.githubusercontent.com/domtronn/all-the-icons.el/master/fonts/%s"
+   "all-the-icons"
+   all-the-icons-font-names)
+
+  (install-icon-fonts
+   "https://raw.githubusercontent.com/rainstormstudio/nerd-icons.el/main/fonts/%s"
+   "nerd-icons"
+   nerd-icons-font-names)
+#+END_SRC
+
+After downloading and manually installing the font (via the Explorer), you can use the block down below to check if the font is installed correctly.
+#+BEGIN_SRC emacs-lisp :results silent
+  (insert
+   "\nall-the-icons: "
+   (all-the-icons-faicon "check")
+   "\nnerd-icons: "
+   (nerd-icons-faicon "nf-fa-check"))
+#+END_SRC
+
+*** Install Hack-fonts
+Download the font for Hack into your .emacs.d-folder.
+#+BEGIN_SRC emacs-lisp
+  (let ((font-dir (org-entry-get (point-min) "font-dir"))
+	(font-dest (expand-file-name "hack" font-dir))
+	(zip-file (expand-file-name (file-name-with-extension "hack" "zip") font-dir)))
+    (unless (file-directory-p font-dir) (mkdir font-dir t))
+
+    (url-copy-file "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/Hack.zip" zip-file t)
+
+    (call-process-shell-command
+     (concat "unzip -o " zip-file " -d " font-dest))
+
+    (delete-file zip-file)
+
+    (browse-url font-dest)
+    (print (format "Hack-fonts downloaded to %s\n" font-dest)))
+#+END_SRC
+
+** Install Magik-specific stuff
+
+#+BEGIN_SRC emacs-lisp :results output
+  (defun download-jar (url jar-dir jar-name)
+    (unless (file-directory-p jar-dir) (mkdir jar-dir t))
+    (let ((jar-dest (expand-file-name jar-name jar-dir)))
+
+    (url-copy-file url jar-dest t)
+
+    (princ (format "%s downloaded to %s\n" jar-name jar-dest))))
+
+  (download-jar
+   (replace-regexp-in-string "magik-language-server" "magik-lint" lsp-magik-download-url-lsp)
+   (expand-file-name "magik-lint" user-emacs-directory)
+   (file-name-with-extension "magik-lint" "jar"))
+
+  (download-jar
+   lsp-magik-download-url-lsp
+   (expand-file-name ".cache/lsp/magik-ls"  user-emacs-directory)
+   (format "magik-language-server-%s.jar" lsp-magik-version))
+#+END_SRC
